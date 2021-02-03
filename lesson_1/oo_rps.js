@@ -26,7 +26,7 @@ function createComputer() {
     name: 'computer',
 
     choose() {
-      const choices = ['rock', 'paper', 'scissors'];
+      const choices = ['rock', 'paper', 'scissors', 'lizard', 'spock'];
       let randomIndex = Math.floor(Math.random() * choices.length);
       this.move = choices[randomIndex];
     }
@@ -45,9 +45,9 @@ function createHuman() {
       let choice;
 
       while (true) {
-        console.log('\nPlease choose rock, paper, or scissors:');
+        console.log('\nPlease choose rock, paper, scissors, lizard, or spock:');
         choice = readline.question('=> ');
-        if (['rock', 'paper', 'scissors'].includes(choice)) break;
+        if (['rock', 'paper', 'scissors', 'lizard', 'spock'].includes(choice)) break;
         console.log('Sorry, invalid choice.');
       }
 
@@ -130,12 +130,21 @@ const RPSGame = {
   getWinner() {
     let humanMove = this.human.move;
     let computerMove = this.computer.move;
+    let movesDefeatedBy = {
+      rock: ['lizard', 'scissors'],
+      paper: ['rock', 'spock'],
+      scissors: ['paper', 'lizard'],
+      lizard: ['spock', 'paper'],
+      spock: ['rock', 'scissors']
+    };
 
     if (humanMove === computerMove) {
       this.gameWinner = null;
-    } else if ((humanMove === 'rock' && computerMove === 'paper') ||
-              (humanMove === 'paper' && computerMove === 'scissors') ||
-              (humanMove === 'scissors' && computerMove === 'rock')) {
+    } else if ((computerMove === 'rock' && movesDefeatedBy.rock.includes(humanMove)) ||
+              (computerMove === 'paper' && movesDefeatedBy.paper.includes(humanMove)) ||
+              (computerMove === 'scissors' && movesDefeatedBy.scissors.includes(humanMove)) ||
+              (computerMove === 'lizard' && movesDefeatedBy.lizard.includes(humanMove)) ||
+              (computerMove === 'spock' && movesDefeatedBy.spock.includes(humanMove))) {
       this.gameWinner = this.computer;
     } else {
       this.gameWinner = this.human;
