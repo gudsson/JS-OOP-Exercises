@@ -11,3 +11,5 @@ Foo.prototype.qux = function() {
 };
 
 let foo = new Foo(10);
+
+function create
