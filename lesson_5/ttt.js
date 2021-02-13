@@ -1,3 +1,5 @@
+let readline = require("readline-sync");
+
 // textual description of the game.
 
 // - Tic Tac Toe is a 2-player board game.
@@ -35,6 +37,10 @@ class Square {
     this.marker = marker;
   }
 
+  setMarker(marker) {
+    this.marker = marker;
+  }
+
   toString() {
     return this.marker;
   }
@@ -46,25 +52,11 @@ Square.COMPUTER_MARKER = "O";
 
 class Board {
   constructor() {
-    //STUB - we'll talk about stubs a bit later
-    // We need a way to model the 3x3 grid. Perhaps "squares"?
-    // What data structure should we use? An Array? An Object? Something else?
-    // What should the data structure store? Strings? Numbers? Square objects?
     this.squares = {};
 
     for (let idx = 1; idx <= 9; idx++) {
       this.squares[idx] = new Square();
     }
-    //   1: new Square(),
-    //   2: new Square(),
-    //   3: new Square(),
-    //   4: new Square("X"),
-    //   5: new Square(),
-    //   6: new Square("O"),
-    //   7: new Square(),
-    //   8: new Square(),
-    //   9: new Square(),
-    // };
   }
 
   display() {
@@ -82,6 +74,10 @@ class Board {
     console.log("     |     |");
     console.log("");
   }
+
+  markSquareAt(key, marker) {
+    this.squares[key].setMarker(marker);
+  }
 }
 
 class Row {
@@ -91,23 +87,13 @@ class Row {
   }
 }
 
-class Marker {
-  constructor() {
-    //STUB
-    // A marker is something that represents a player's "piece" on the board.
-  }
-}
-
 class Player {
-  constructor() {
-    //STUB
-    // maybe a "marker" to keep track of this player's symbol (i.e., 'X' or 'O')
+  constructor(marker) {
+    this.marker = marker;
   }
 
-  mark() {
-    //STUB
-    // We need a way to mark the board with this player's marker.
-    // How do we access the board?
+  getMarker() {
+    return this.marker;
   }
 
   play() {
@@ -119,19 +105,21 @@ class Player {
 
 class Human extends Player {
   constructor() {
-    //STUB
+    super(Square.HUMAN_MARKER);
   }
 }
 
 class Computer extends Player {
   constructor() {
-    //STUB
+    super(Square.COMPUTER_MARKER);
   }
 }
 
 class TTTGame {
   constructor() {
     this.board = new Board();
+    this.human = new Human();
+    this.computer = new Computer();
   }
 
   play() {
@@ -141,16 +129,40 @@ class TTTGame {
     while (true) {
       this.board.display();
 
-      this.firstPlayerMoves();
+      this.humanMoves();
+      this.board.display(); // so we can see human's move
       if (this.gameOver()) break;
 
-      this.secondPlayerMoves();
+      this.computerMoves();
+      this.board.display(); // so we can see computer's move
       if (this.gameOver()) break;
       break; // <= execute loop only once for now
     }
 
     this.displayResults();
     this.displayGoodbyeMessage();
+  }
+
+  humanMoves() {
+    let choice;
+
+    while (true) {
+      choice = readline.question("Choose a square between 1 and 9: ");
+
+      let integerValue = parseInt(choice, 10);
+      if (integerValue >= 1 && integerValue <= 9) {
+        break;
+      }
+
+      console.log("Sorry, that's not a valid choice.\n");
+    }
+
+    this.board.markSquareAt(choice, this.human.getMarker());
+  }
+
+  computerMoves() {
+    let choice = Math.floor((9 * Math.random()) + 1);
+    this.board.markSquareAt(choice, this.computer.getMarker());
   }
 
   displayWelcomeMessage() {
@@ -164,16 +176,6 @@ class TTTGame {
   displayResults() {
     //STUB
     // show the results of this game (win, lose, tie)
-  }
-
-  firstPlayerMoves() {
-    //STUB
-    // the first player makes a move
-  }
-
-  secondPlayerMoves() {
-    //STUB
-    // the second player makes a move
   }
 
   gameOver() {
