@@ -1,15 +1,3 @@
-function Foo(parm) {
-  this.parm = parm;
-}
+let a = Object.create(null);
 
-Foo.bar = function() {
-  // omitted code
-};
-
-Foo.prototype.qux = function() {
-  // omitted code
-};
-
-let foo = new Foo(10);
-
-function create
+console.log(Object.getPrototypeOf(a));
