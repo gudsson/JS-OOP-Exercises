@@ -1,5 +1,6 @@
 /* eslint-disable max-statements */
 /* eslint-disable max-lines-per-function */
+
 /////////////////////////////////////////
 // Object-Oriented Rock-Paper-Scissors //
 /////////////////////////////////////////
@@ -9,7 +10,6 @@ const MIN_MATCH_LENGTH = 1;
 const MAX_MATCH_LENGTH = 100;
 
 function createPlayer() {
-  // const CHOICES1 = [69];
   return {
     name: null,
     move: null,
@@ -29,30 +29,40 @@ function createComputer() {
     weights: {},
 
     choose(moveOptions) {
-      let randomIndex = Math.floor(Math.random() * moveOptions.length);
-      this.move = moveOptions[randomIndex];
-      console.log(this.calculateWeights(moveOptions));
+      let weightObj = this.calculateWeights(moveOptions);
+      let totalProbability = Object.values(weightObj)
+        .reduce((acc, cur) => acc + cur, 0);
+      let randomNumber = Math.random() * totalProbability;
+      let weightKeys = Object.keys(weightObj);
+      let threshold = 0;
+      console.log('randNum: ' + randomNumber);
+
+      for (let idx = 0; idx < weightKeys.length; idx++) {
+        threshold += weightObj[weightKeys[idx]];
+        console.log('threshold: ' + threshold + ' ' + weightKeys[idx]);
+
+        if (threshold > randomNumber || idx === weightKeys.length - 1) {
+          this.move = weightKeys[idx];
+          break;
+        }
+      }
     },
 
     calculateWeights(moveOptions) {
-      const DEFAULT_WEIGHT = 1 / moveOptions.length;
-      const MIN_WEIGHT = DEFAULT_WEIGHT / 2;
-
-      let weights = moveOptions.map(move => {
-        let moveOccurences = this.moveHistory.filter(arr => {
-          return arr[0] === move;
-        });
-        let humanWins = moveOccurences.filter(arr => {
-          return arr[1] === 'human';
-        }).length;
-
-        let weight = Math.max(MIN_WEIGHT, (humanWins / moveOccurences || 0));
-
-        return weight;
+      const MIN_PROB = 0.1; // don't let computer eliminate a poorly performing choice
+      const EXPECTED_PROB = 0.5;
+      let weights = {};
+      moveOptions.forEach(move => {
+        let occurences = this.moveHistory.filter(arr => arr[0] === move);
+        let humanWins = occurences.filter(arr => arr[1] === 'human').length;
+        let numOccurences = occurences.length;
+        let calculatedWeight = 1 - (humanWins / numOccurences);
+        let weight = (calculatedWeight) ? calculatedWeight : EXPECTED_PROB;
+        weights[move] = (weight > MIN_PROB) ? weight : MIN_PROB;
       });
 
       return weights;
-    }
+    },
   };
 
   return Object.assign(playerObject, computerObject);
@@ -81,24 +91,6 @@ function createHuman() {
   return Object.assign(playerObject, humanObject);
 }
 
-// function createMove() {
-//   return {
-//     // possible state: type of move (paper, rock, scissors)
-//   };
-// }
-
-// function createRule() {
-//   return {
-//     // possible state? not clear whether Rules need state
-//   };
-// }
-
-// // Since we don't yet know where to put `compare`, let's define
-// // it as an ordinary function.
-// let compare = function(move1, move2) {
-//   // not yet implemented
-// };
-
 const RPSGame = {
   human: createHuman(),
   computer: createComputer(),
@@ -109,7 +101,7 @@ const RPSGame = {
   matchWinner: null,
 
   displayWelcomeMessage(subtitle = "") {
-    let title = 'Welcome to Rock, Paper, Scissors, LIZARD, SPOCK!';
+    let title = 'Welcome to Rock, Paper, Scissors, Lizard, Spock!';
     let maxLen = title.length + 2;
     let border = `+${'-'.repeat(maxLen)}+`;
     console.clear();
@@ -224,9 +216,6 @@ const RPSGame = {
 
       console.log(`      Game ${game.id}:  ${playerMove} v. ${computerMove}`);
     });
-
-    console.log('===');
-    console.log(this.computer.moveHistory);
   },
 
   addToWinnerHistory() {
