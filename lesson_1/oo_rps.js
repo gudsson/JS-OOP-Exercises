@@ -16,7 +16,7 @@ function createPlayer() {
     wins: 0,
     moveHistory: [],
     addMove(gameWinner = null) {
-      this.moveHistory.push([this.move, (gameWinner) ? gameWinner.name : null]);
+      this.moveHistory.push([this.move, gameWinner]);
     }
   };
 }
@@ -54,7 +54,7 @@ function createComputer() {
       let weights = {};
       moveOptions.forEach(move => {
         let occurences = this.moveHistory.filter(arr => arr[0] === move);
-        let humanWins = occurences.filter(arr => arr[1] === 'human').length;
+        let humanWins = occurences.filter(arr => arr[1].name === 'human').length;
         let numOccurences = occurences.length;
         let calculatedWeight = 1 - (humanWins / numOccurences);
         let weight = (calculatedWeight) ? calculatedWeight : EXPECTED_PROB;
