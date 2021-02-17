@@ -1,34 +1,57 @@
+/* eslint-disable max-statements */
 /* eslint-disable max-lines-per-function */
 /////////////////////////////////////////
 // Object-Oriented Rock-Paper-Scissors //
 /////////////////////////////////////////
 
-// RPS is a two-player game where each player chooses one of three possible
-// moves: rock, paper, or scissors. The winner is chosen by comparing their
-// moves with the following rules:
-
-// Rock crushes scissors, i.e., rock wins against scissors.
-// Scissors cuts paper, i.e., scissors beats paper.
-// Paper wraps rock, i.e., paper beats rock.
-// If the players chose the same move, the game is a tie.
-
-// Nouns: player, move, rule
-// Verbs: choose, compare
-
 const readline = require('readline-sync');
 const MIN_MATCH_LENGTH = 1;
 const MAX_MATCH_LENGTH = 100;
+
+function createPlayer() {
+  // const CHOICES1 = [69];
+  return {
+    name: null,
+    move: null,
+    wins: 0,
+    moveHistory: [],
+    addMove(gameWinner = null) {
+      this.moveHistory.push([this.move, (gameWinner) ? gameWinner.name : null]);
+    }
+  };
+}
 
 function createComputer() {
   let playerObject = createPlayer();
 
   let computerObject = {
     name: 'computer',
+    weights: {},
 
-    choose() {
-      const choices = ['rock', 'paper', 'scissors', 'lizard', 'spock'];
-      let randomIndex = Math.floor(Math.random() * choices.length);
-      this.move = choices[randomIndex];
+    choose(moveOptions) {
+      let randomIndex = Math.floor(Math.random() * moveOptions.length);
+      this.move = moveOptions[randomIndex];
+      console.log(this.calculateWeights(moveOptions));
+    },
+
+    calculateWeights(moveOptions) {
+      const DEFAULT_WEIGHT = 1 / moveOptions.length;
+      const MIN_WEIGHT = DEFAULT_WEIGHT / 2;
+
+      let weights = moveOptions.map(move => {
+        let moveOccurences = this.moveHistory.filter(arr => {
+          return arr[0] === move;
+        });
+        let humanWins = moveOccurences.filter(arr => {
+          return arr[1] === 'human';
+        }).length;
+
+        let weight = Math.max(MIN_WEIGHT, (humanWins / moveOccurences || 0));
+
+        return weight;
+      });
+
+      return weights;
     }
   };
 
@@ -41,13 +64,13 @@ function createHuman() {
   let humanObject = {
     name: 'human',
 
-    choose() {
+    choose(moveOptions) {
       let choice;
 
       while (true) {
         console.log('\nPlease choose rock, paper, scissors, lizard, or spock:');
         choice = readline.question('=> ');
-        if (['rock', 'paper', 'scissors', 'lizard', 'spock'].includes(choice)) break;
+        if (moveOptions.includes(choice)) break;
         console.log('Sorry, invalid choice.');
       }
 
@@ -56,14 +79,6 @@ function createHuman() {
   };
 
   return Object.assign(playerObject, humanObject);
-}
-
-function createPlayer() {
-  return {
-    name: null,
-    move: null,
-    wins: 0
-  };
 }
 
 // function createMove() {
@@ -90,14 +105,29 @@ const RPSGame = {
   gamesPlayedInMatch: 0,
   winsNeeded: null,
   gameWinner: null,
+  gameWinners: [],
   matchWinner: null,
 
-  displayWelcomeMessage() {
-    console.log('Welcome to Rock, Paper, Scissors!');
+  displayWelcomeMessage(subtitle = "") {
+    let title = 'Welcome to Rock, Paper, Scissors, LIZARD, SPOCK!';
+    let maxLen = title.length + 2;
+    let border = `+${'-'.repeat(maxLen)}+`;
+    console.clear();
+
+    console.log(border);
+    console.log(`|${' '.repeat(maxLen)}|`);
+    console.log(`| ${title} |`);
+    if (subtitle) {
+      console.log(`| ${'-'.repeat(title.length)} |`);
+      console.log(`|${subtitle.padStart((maxLen + subtitle.length) / 2, " ")
+        .padEnd(maxLen, ' ')}|`);
+    }
+    console.log(`|${' '.repeat(maxLen)}|`);
+    console.log(border);
   },
 
   displayGoodbyeMessage() {
-    console.log('Thanks for playing Rock, Paper, Scissors. Goodbye!');
+    console.log('\nThanks for playing Rock, Paper, Scissors, Lizard, Spock. Goodbye!');
   },
 
   getWinsNeeded() { // get match length from user (best-of-n)
@@ -118,7 +148,6 @@ const RPSGame = {
       }
     }
 
-    console.log(`Game on.  Good luck!`);
     this.winsNeeded = matchLength;
   },
 
@@ -165,24 +194,62 @@ const RPSGame = {
     if (this.gameWinner) this.gameWinner.wins += 1;
   },
 
-  displayScore() {
-    let humanWins = this.human.wins;
-    let computerWins = this.computer.wins;
-    let ties = this.gamesPlayedInMatch - (humanWins + computerWins);
+  getScoreline() {
+    let scoreline = `First to ${this.winsNeeded} wins | Player ${this.human.wins}`
+      + ` v. Computer ${this.computer.wins}`;
+    return scoreline;
+  },
 
-    let scoreboardIntro = `Current Score:`;
-    scoreboardIntro += `\n${'='.repeat(14)}`;
+  displayHistory() {
+    let title = 'Matchup History: Player v. Computer';
+    let humanMoves = this.human.moveHistory;
+    let computerMoves = this.computer.moveHistory;
+    let moveArr = [];
 
-    console.log(`\n${scoreboardIntro}`);
-    console.log(`Player:    ${humanWins} ${(humanWins === 1 ? 'win' : 'wins')}`);
-    console.log(`Computer:  ${computerWins} ${(computerWins === 1 ? 'win' : 'wins')}`);
-    console.log(`Ties:      ${ties} ${(ties === 1 ? 'tie' : 'ties')}`);
+    console.log(`\n${title}\n${'='.repeat(title.length)}`);
+
+    // combine move history with winner array
+    for (let idx = 0; idx < humanMoves.length; idx++) {
+      moveArr.push({
+        id: (idx + 1),
+        player: humanMoves[idx][0],
+        computer: computerMoves[idx][0],
+        result: this.gameWinners[idx],
+      });
+    }
+
+    moveArr.forEach(game => {
+      let playerMove = game.result === 'human' ? game.player.toUpperCase() : game.player;
+      let computerMove = game.result === 'computer' ? game.computer.toUpperCase() : game.computer;
+
+      console.log(`      Game ${game.id}:  ${playerMove} v. ${computerMove}`);
+    });
+
+    console.log('===');
+    console.log(this.computer.moveHistory);
+  },
+
+  addToWinnerHistory() {
+    let winner = null;
+
+    if (this.gameWinner) {
+      winner = this.gameWinner.name;
+    }
+
+    this.gameWinners.push(winner);
   },
 
   playAgain() {
-    console.log('\nWould you like to play again? (y/n)');
-    let answer = readline.question('=> ');
-    return answer.toLowerCase()[0] === 'y';
+    let answer;
+
+    while (true) {
+      console.log('\nWould you like to play again? (y/n)');
+      answer = readline.question('=> ').toLowerCase();
+      if (['y', 'n'].includes(answer[0])) break;
+      console.log('Sorry, invalid choice.');
+    }
+
+    return answer[0] === 'y';
   },
 
   someoneWonMatch() {
@@ -220,8 +287,14 @@ const RPSGame = {
   },
 
   getMoves() {
-    this.human.choose();
-    this.computer.choose();
+    const CHOICES = ['rock', 'paper', 'scissors', 'lizard', 'spock'];
+    this.human.choose(CHOICES);
+    this.computer.choose(CHOICES);
+  },
+
+  recordMoves() {
+    this.human.addMove();
+    this.computer.addMove(this.gameWinner);
   },
 
   play() {
@@ -229,11 +302,15 @@ const RPSGame = {
     this.getWinsNeeded();
 
     while (true) {
+      this.displayWelcomeMessage(this.getScoreline());
       this.getMoves();
       this.getWinner();
-      this.displayGameplay();
       this.updateScore();
-      this.displayScore();
+      this.displayWelcomeMessage(this.getScoreline());
+      this.displayGameplay();
+      this.recordMoves();
+      this.addToWinnerHistory();
+      this.displayHistory();
 
       if (this.someoneWonMatch()) {
         this.getMatchWinner();
