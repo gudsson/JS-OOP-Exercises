@@ -1,8 +1,13 @@
-function Lizard() {
-  this.scamper = function() {
-    console.log("I'm scampering!");
-  };
+function Foo(parm) {
+  this.parm = parm;
 }
 
-let lizzy = new Lizard();
-lizzy.scamper(); // ?
+Foo.bar = function() {
+  // omitted code
+};
+
+Foo.prototype.qux = function() {
+  // omitted code
+};
+
+let foo = new Foo(10);
