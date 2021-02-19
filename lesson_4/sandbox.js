@@ -7,12 +7,9 @@ Person.prototype.speak = function() {
   return `Hello, my name is ${this.name}.`;
 };
 
-function Child(name, school) {
-  Person.call(this, name);
-  this.school = school;
-}
+// your code from the previous question.
 
-Child.prototype = Object.create(Person.prototype);
+// more missing code
 
 Child.prototype.learn = function() {
   return "I'm going to school!";
