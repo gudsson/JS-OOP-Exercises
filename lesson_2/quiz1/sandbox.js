@@ -1,5 +1,6 @@
-(function sum(number1, number2) {
-  return number + number2;
-});
-
-console.log(sum(3, 4));
+global.foo = 5;
+if (isFinite(foo)) {
+  let bar = 3;
+  xyz = 5;
+  console.log(bar);
+}

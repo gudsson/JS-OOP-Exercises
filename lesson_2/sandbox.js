@@ -1,31 +1,26 @@
-let greetings = {
-  morning: 'Good morning, ',
-  afternoon: 'Good afternoon, ',
-  evening: 'Good evening, ',
+function Dog(name, breed, weight) {
+  // Object.setPrototypeOf(this, Dog.myPrototype);
+  this.name = name;
+  this.breed = breed;
+  this.weight = weight;
+}
 
-  greeting(name) {
-    let currentHour = (new Date()).getHours();
-
-    if (currentHour < 12) {
-      console.log(this.morning + name);
-    } else if (currentHour < 18) {
-      console.log(this.afternoon + name);
-    } else {
-      console.log(this.evening + name);
-    }
+Dog.myPrototype = {
+  bark() {
+    console.log(this.weight > 20 ? 'Woof!' : 'Yip!');
   }
 };
 
-let spanishWords = {
-  morning: 'Buenos dias, ',
-  afternoon: 'Buenas tardes, ',
-  evening: 'Buena noches, '
-};
+let maxi = new Dog('Maxi', 'German Shepherd', 32);
+let dexter = new Dog('Dexter', 'Rottweiler', 50);
+let biggie = new Dog('Biggie', 'Whippet', 9);
+// maxi.bark(); // 'Woof!'
 
-let spanishGreeter = greetings.greeting;
+console.log(Object.keys(maxi));
 
-spanishGreeter('Jose');
-spanishGreeter('Juan');
-
-// greetings.greeting('Jose');
-// greetings.greeting('Juan');
+console.log(maxi.hasOwnProperty('myPrototype')); // false
+console.log(dexter.hasOwnProperty('bark')); // false
+console.log(biggie.hasOwnProperty('bark')); // false
+// Object.getPrototypeOf(maxi).bark === Dog.myPrototype.bark; // true
+// Object.getPrototypeOf(dexter).bark === Dog.myPrototype.bark; // true
+// Object.getPrototypeOf(biggie).bark === Dog.myPrototype.bark; // true
