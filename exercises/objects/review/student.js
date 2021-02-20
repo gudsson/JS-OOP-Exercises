@@ -12,6 +12,7 @@ function createStudent(name, year) {
     name: name,
     year: year,
     courses: [],
+    notes: {},
 
     info() { // info: Logs the name and year of the student.
       console.log(`${this.name} is a ${this.year} student`);
@@ -19,33 +20,43 @@ function createStudent(name, year) {
 
     // addCourse: Enrolls student in a course. A course is an object
     // literal that has properties for its name and code.
-    addCourse(courseObj) {
+    addCourse(courseObj) { //foo.addCourse({ name: 'Math', code: 101 });
       this.courses.push(courseObj);
     },
 
     // listCourses: Returns a list of the courses student has
     // enrolled in.
     listCourses() {
-      return this.courses;
+      console.log(this.courses);
     },
 
     // addNote: Adds a note property to a course. Takes a code and a
     // note as an argument. If a note already exists, the note is
     // appended to the existing one.
-    addNotes() {
-
+    addNote(code, note) { // foo.addNote(101, 'Fun course');
+      // this.notes.push([code, note]);
+      if (this.notes.hasOwnProperty(code)) {
+        this.notes[code].push(note);
+      } else this.notes[code] = [note];
     },
 
     // updateNote: Updates a note for a course. Updating a note
     // replaces the existing note with the new note.
-    updateNote() {
-
+    updateNote(code, note) {
+      this.notes[code] = [note];
     },
 
     // viewNotes: Logs the notes for all the courses. Courses without
     // notes are not displayed.
-    viewNotes() {
-      
+    viewNotes() { //"Math: Fun course; Remember to study for algebra"
+      // let keys = Object.keys(this.notes);
+
+      for (let code in this.notes) {
+        let course = this.courses.find(val => {
+          return val.code === +code;
+        }).name;
+        console.log(`${course}: ${this.notes[code].join('; ')}`);
+      }
     }
   };
 }
