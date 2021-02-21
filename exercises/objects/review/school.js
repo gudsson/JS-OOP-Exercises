@@ -32,36 +32,96 @@
 // the objects are not shown here for brevity.
 // The following are only showing the properties that aren't
 // methods for the three objects
+function createStudent(name, year) {
+  return {
+    name: name,
+    year: year,
+    courses: [],
+    notes: {},
 
-// foo;
-// {
-//   name: 'foo',
-//   year: '3rd',
-//   courses: [
-//     { name: 'Math', code: 101, grade: 95, },
-//     { name: 'Advanced Math', code: 102, grade: 90, },
-//     { name: 'Physics', code: 202, }
-//   ],
-// }
+    addCourse(courseObj) {
+      this.courses.push(courseObj);
+    },
 
-// bar;
-// {
-//   name: 'bar',
-//   year: '1st',
-//   courses: [
-//     { name: 'Math', code: 101, grade: 91, },
-//   ],
-// }
+    listCourses() {
+      console.log(this.courses);
+    },
+  };
+}
 
-// qux;
-// {
-//   name: 'qux',
-//   year: '2nd',
-//   courses: [
-//     { name: 'Math', code: 101, grade: 93, },
-//     { name: 'Advanced Math', code: 102, grade: 90, },
-//    ],
-// }
+let school = {
+  students: [],
+  courses: {},
+
+  addStudent(name, year) {
+    let validYears = ['1st', '2nd', '3rd', '4th', '5th'];
+
+    if (validYears.includes(year)) {
+      let student = createStudent(name, year);
+      this.students.push(student);
+      return student;
+    } else return console.log("Invalid Year");
+  },
+
+  enrollStudent(student, courseName, courseCode) {
+    student.addCourse({name: courseName, code: courseCode});
+  },
+
+  addGrade(student, course, grade) {
+    for (let idx = 0; idx < student.courses.length; idx++) {
+      if (student.courses[idx].name === course) {
+        student.courses[idx]['grade'] = grade;
+        return;
+      }
+    }
+    console.log(`Student not enrolled in ${course}`);
+  },
+
+  getReportCard(student) {
+    student.courses.forEach(course => {
+      console.log(`${course.name}: ${course.grade ? course.grade : 'In Progress'}`);
+    });
+  },
+
+  courseReport(courseName) {
+    let studentGrades = {};
+    this.students.forEach(student => {
+      student.courses.forEach(course => {
+        if (course.grade && course.name === courseName) {
+          studentGrades[student.name] = course.grade;
+        }
+      });
+    });
+
+    let grades = Object.values(studentGrades);
+
+    if (grades.length) {
+      let studentList = Object.keys(studentGrades);
+      let average = grades.reduce((acc, cur) => acc + cur, 0) / grades.length;
+      console.log(`=${courseName} Grades=`);
+      studentList.forEach(student => console.log(`${student}: ${studentGrades[student]}`));
+      console.log(`---\nCourse Average: ${average.toFixed(0)}`);
+    }
+  }
+};
+
+let foo = school.addStudent('foo', '3rd');
+school.enrollStudent(foo, 'Math', 101);
+school.enrollStudent(foo, 'Advanced Math', 102);
+school.enrollStudent(foo, 'Physics', 202);
+school.addGrade(foo, 'Math', 95);
+school.addGrade(foo, 'Advanced Math', 90);
+
+let bar = school.addStudent('bar', '1st');
+school.enrollStudent(bar, 'Math', 101);
+school.addGrade(bar, 'Math', 91);
+
+let qux = school.addStudent('qux', '2nd');
+school.enrollStudent(qux, 'Math', 101);
+school.enrollStudent(qux, 'Advanced Math', 102);
+school.addGrade(qux, 'Math', 93);
+school.addGrade(qux, 'Advanced Math', 90);
+
 
 school.getReportCard(foo);
 // = Math: 95
