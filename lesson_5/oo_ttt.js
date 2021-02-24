@@ -152,8 +152,21 @@ class TTTGame {
 
   play() {
     this.displayWelcomeMessage();
+    // this.board.display();
 
-    this.board.display();
+    while (true) {
+      // this.board.display();
+      this.playGame();
+      // this.board.displayWithClear();
+      if (!this.playAgain()) break;
+    }
+    this.displayGoodbyeMessage();
+  }
+
+  playGame() {
+    // this.board = new Board();
+    this.resetGame();
+    // this.board.display();
     while (true) {
 
       this.humanMoves();
@@ -167,8 +180,31 @@ class TTTGame {
 
     this.board.displayWithClear();
     this.displayResults();
-    this.displayGoodbyeMessage();
+  }
 
+  playAgain() {
+    let answer;
+
+    while (true) {
+      console.log("Would you like to play again? ('y' or 'n')");
+      answer = readline.question("=> ").toLowerCase();
+
+      if (['y', 'n'].includes(answer)) break;
+
+      console.log('Sorry, invalid choice');
+    }
+
+    return answer === 'y';
+  }
+
+  resetGame() {
+    let isFirstMatch = (this.board.unusedSquares().length === 9);
+    if (isFirstMatch) {
+      this.board.display();
+    } else {
+      this.board = new Board();
+      this.board.displayWithClear();
+    }
   }
 
   displayWelcomeMessage() {
@@ -177,12 +213,17 @@ class TTTGame {
     console.log("");
   }
 
+  joinOr(choices, separator = ', ', outro = 'or') {
+    if (choices.length === 1) return choices.toString();
+    return `${choices.slice(0, -1).join(separator)} ${outro} ${choices.slice(-1)}`;
+  }
+
   humanMoves() {
     let choice;
 
     while (true) {
       let validChoices = this.board.unusedSquares();
-      choice = readline.question(`Choose a square (${validChoices.join(', ')}): `);
+      choice = readline.question(`Choose a square (${this.joinOr(validChoices)}): `);
 
       if (validChoices.includes(choice)) break;
 
