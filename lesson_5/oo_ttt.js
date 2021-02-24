@@ -141,6 +141,8 @@ class TTTGame {
     this.board = new Board();
     this.human = new Human();
     this.computer = new Computer();
+    this.firstPlayer = this.human;
+    this.currentPlayer = this.firstPlayer;
   }
 
   playMatch() {
@@ -160,13 +162,10 @@ class TTTGame {
     this.resetGame();
     while (true) {
 
-      this.humanMoves();
+      this.playerMoves(this.currentPlayer);
       if (this.gameOver()) break;
-
-      this.computerMoves();
-      if (this.gameOver()) break;
-
       this.board.displayWithClear(this.getScoreline());
+      this.currentPlayer = this.changePlayer(this.currentPlayer);
     }
 
     this.updateScore();
@@ -189,13 +188,23 @@ class TTTGame {
     return answer === 'y';
   }
 
+  changePlayer(player) {
+    return (player === this.human) ? this.computer : this.human;
+  }
+
   resetGame() {
     if (this.board.isEmpty()) {
       this.board.displayMatch(this.getScoreline());
     } else {
+      this.changeFirstPlayer();
       this.board = new Board();
       this.board.displayWithClear(this.getScoreline());
     }
+  }
+
+  changeFirstPlayer() {
+    this.firstPlayer = this.changePlayer(this.firstPlayer);
+    this.currentPlayer = this.firstPlayer;
   }
 
   isFirstMatch() {
@@ -211,6 +220,14 @@ class TTTGame {
   joinOr(choices, separator = ', ', outro = 'or') {
     if (choices.length === 1) return choices.toString();
     return `${choices.slice(0, -1).join(separator)} ${outro} ${choices.slice(-1)}`;
+  }
+
+  playerMoves(currentPlayer) {
+    if (currentPlayer === this.human) {
+      this.humanMoves();
+    } else {
+      this.computerMoves();
+    }
   }
 
   humanMoves() {
