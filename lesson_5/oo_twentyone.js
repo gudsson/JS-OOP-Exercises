@@ -32,23 +32,26 @@ class Card {
   static SUITS = ['Spades', 'Clubs', 'Diamonds', 'Hearts'];
 
   static RANKS = {
-    2: 2,
-    3: 3,
-    4: 4,
-    5: 5,
-    6: 6,
-    7: 7,
-    8: 8,
-    9: 9,
-    10: 10,
+    // 2: 2,
+    // 3: 3,
+    // 4: 4,
+    // 5: 5,
+    // 6: 6,
+    // 7: 7,
+    // 8: 8,
+    // 9: 9,
+    // 10: 10,
     Jack: 10,
     Queen: 10,
     King: 10,
     Ace: 11
   }
 
+  static MAX_ACE_VALUE = Card.RANKS.Ace;
+  static MIN_ACE_VALUE = 1;
+
   getCardName() {
-    return `${this.rank} of ${this.suit}`;
+    return (this.hide) ? `an unknown card` : `${this.rank} of ${this.suit}`;
   }
 
   getRank() {
@@ -59,8 +62,12 @@ class Card {
     return this.rank === 'Ace';
   }
 
-  getPointValue() {
-    return null;
+  isHidden() {
+    return this.hide;
+  }
+
+  getCardValue() {
+    return (this.hide) ? 0 : Card.RANKS[this.rank];
   }
 
   hideCard() {
@@ -110,12 +117,32 @@ class Participant {
     this.hand.push(card);
   }
 
-  displayHand() {
-    //STUB
+  joinOr(choices, separator = ', ', outro = 'and') {
+    if (choices.length === 1) return choices.toString();
+    return `${choices.slice(0, -1).join(separator)} ${outro} ${choices.slice(-1)}`;
   }
 
-  hit() {
-    //STUB
+  showHand() {
+    let cardNames = this.hand.map(card => card.getCardName());
+    let scorePrefix = (this.hand.some(card => card.isHidden())) ? 'Showing' : 'Total of';
+    this.updateRawHandValue();
+
+    console.log(`${this.constructor.name} has: `
+      + `${this.joinOr(cardNames)} (${scorePrefix} ${this.handValue}).`);
+  }
+
+  updateRawHandValue() {
+    this.handValue = this.hand.map(card => {
+      return card.getCardValue();
+    }).reduce((total, current) => total + current, 0);
+  }
+
+  countAces() {
+    return this.hand.filter(card => card.isAce()).length;
+  }
+
+  hit(card) {
+    this.takeCard(card);
   }
 
   stay() {
@@ -124,6 +151,22 @@ class Participant {
 
   bust() {
     //STUB
+  }
+
+  getHandValue(bustThreshold = null) {
+    if (bustThreshold && this.handValue > bustThreshold) {
+      this.aceAdjustment(bustThreshold);
+    }
+    // this.aceAdjustment();
+
+    return this.handValue;
+  }
+
+  aceAdjustment(bustThreshold) {
+    for (let idx = 0; idx < this.countAces(); idx++) {
+      this.handValue -= (Card.MAX_ACE_VALUE - Card.MIN_ACE_VALUE);
+      if (this.handValue <= bustThreshold) break;
+    }
   }
 
   score() {
@@ -173,11 +216,13 @@ class Dealer extends Participant {
 
   static HIT_THRESHOLD = 17;
 
-  showHoleCard() {
-
+  hideHoleCard() {
+    this.hand[1].hideCard();
   }
 
-  hideHoleCard() {}
+  showHoleCard() {
+    this.hand[1].unhideCard();
+  }
 }
 
 class TwentyOneGame {
@@ -187,6 +232,10 @@ class TwentyOneGame {
     this.player = new Player();
     this.dealer = new Dealer();
   }
+
+  static HIT = 'h';
+  static STAY = 's';
+  static BUST_THRESHOLD = 21;
 
   start() {
     //SPIKE
@@ -205,11 +254,14 @@ class TwentyOneGame {
   }
 
   playSingleHand() {
-    this.dealCards();
-    this.showCards();
-    // this.playerTurn();
-    // this.dealerTurn();
-    let pause = readline.question();
+    while (true) {
+      this.dealCards();
+      this.showCards();
+      this.playerTurn();
+      // this.dealerTurn();
+      let pause = readline.question();
+      if (pause) break;
+    }
   }
 
   dealCards() {
@@ -217,32 +269,75 @@ class TwentyOneGame {
       this.player.takeCard(this.deck.dealCard());
       this.dealer.takeCard(this.deck.dealCard());
     }
+
+    this.dealer.hideHoleCard();
   }
 
   showCards() {
     //STUB
-    console.log(this.player.hand);
-    console.log(this.dealer.hand);
+    this.dealer.showHand();
+    this.player.showHand();
     // this.deck.cardsInDeck.forEach(card => {
     //   console.log(card.getCardName());
     // });
   }
 
   playerTurn() {
-    //STUB
+    // console.log(this.hitOrStay()); ///
+    while (this.hitOrStay() === TwentyOneGame.HIT) {
+      this.hit(this.player);
+      if (this.isBusted(this.player)) break;
+    }
+  }
+
+  isBusted(player) {
+    let handValue = player.getHandValue(TwentyOneGame.BUST_THRESHOLD);
+    return handValue > TwentyOneGame.BUST_THRESHOLD;
+  }
+
+  // calculateHandScore(player) {
+  //   player.
+  // }
+
+  hitOrStay() { //DONE
+    let answer;
+
+    while (true) {
+      console.log(`\nDo you want to hit [h] or stay [s]?`);
+      answer = readline.question('=> ').toLowerCase();
+
+      if ([TwentyOneGame.HIT, TwentyOneGame.STAY].includes(answer)) break;
+      console.log('\nInvalid response.');
+    }
+
+    return answer;
+  }
+
+  hit(player) {
+    player.hit(this.deck.dealCard());
+    console.log(`${player.constructor.name} hits!`);
+    //check if busted
+
+    console.log('hit!');
+    this.showCards();
   }
 
   dealerTurn() {
     //STUB
   }
 
-  displayWelcomeMessage() {
+  displayWelcomeMessage() { //DONE
     console.clear();
-    console.log("Welcome to Twenty-One!");
+    let title = "Welcome to Twenty-One!";
+    let horizontalBorder = `+${'-'.repeat(title.length + 2)}+`;
+
+    console.log(horizontalBorder);
+    console.log(`| ${title.toUpperCase()} |`);
+    console.log(horizontalBorder);
     console.log("");
   }
 
-  displayGoodbyeMessage() {
+  displayGoodbyeMessage() { //DONE
     console.log("\nThanks for playing Tic Tac Toe!  Goodbye!");
   }
 
@@ -250,7 +345,7 @@ class TwentyOneGame {
     //STUB
   }
 
-  playAgain() {
+  playAgain() { //DONE
     let answer;
 
     while (true) {
