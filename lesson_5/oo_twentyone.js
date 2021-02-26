@@ -38,8 +38,8 @@ class Card {
     // 5: 5,
     // 6: 6,
     // 7: 7,
-    // 8: 8,
-    // 9: 9,
+    8: 8,
+    9: 9,
     // 10: 10,
     Jack: 10,
     Queen: 10,
@@ -67,7 +67,7 @@ class Card {
   }
 
   getCardValue() {
-    return (this.hide) ? 0 : Card.RANKS[this.rank];
+    return (this.isHidden()) ? 0 : Card.RANKS[this.rank];
   }
 
   hideCard() {
@@ -107,7 +107,7 @@ class Deck {
 class Participant {
   constructor() {
     this.hand = [];
-    this.handValue = 0;
+    this.handValue = null;
   }
 
   // dealHand() {
@@ -122,19 +122,34 @@ class Participant {
     return `${choices.slice(0, -1).join(separator)} ${outro} ${choices.slice(-1)}`;
   }
 
-  showHand() {
+  getHandDescription() {
     let cardNames = this.hand.map(card => card.getCardName());
-    let scorePrefix = (this.hand.some(card => card.isHidden())) ? 'Showing' : 'Total of';
-    this.updateRawHandValue();
+    // let scorePrefix = (this.isHoleHidden()) ? 'Showing' : 'Total of';
+    // let displayValue = (this.isHoleHidden()) ? 'Showing' : this.handValue;
 
-    console.log(`${this.constructor.name} has: `
-      + `${this.joinOr(cardNames)} (${scorePrefix} ${this.handValue}).`);
+    return `${this.constructor.name} has: ${this.joinOr(cardNames)}`;
   }
 
-  updateRawHandValue() {
-    this.handValue = this.hand.map(card => {
+  // isHoleHidden() {
+  //   return (this.hand.some(card => card.isHidden()));
+  // }
+
+  // getExposedHandValue() {
+  //   return (this.isHoleHidden()) ?  : this.handValue;
+  // }
+
+  sumRawHandValue() {
+    return this.hand.map(card => {
       return card.getCardValue();
     }).reduce((total, current) => total + current, 0);
+  }
+
+  updateHandValue(bustThreshold = null) {
+    this.handValue = this.sumRawHandValue();
+
+    if (bustThreshold && this.handValue > bustThreshold) {
+      this.aceAdjustment(bustThreshold);
+    }
   }
 
   countAces() {
@@ -153,12 +168,7 @@ class Participant {
     //STUB
   }
 
-  getHandValue(bustThreshold = null) {
-    if (bustThreshold && this.handValue > bustThreshold) {
-      this.aceAdjustment(bustThreshold);
-    }
-    // this.aceAdjustment();
-
+  getHandValue() {
     return this.handValue;
   }
 
@@ -183,6 +193,10 @@ class Player extends Participant {
   static STARTING_CASH = 5;
   static WINNING_THRESHOLD = 2 * Player.STARTING_CASH;
   static BET_AMOUNT = 1;
+
+  showHand() {
+    console.log(`${this.getHandDescription()} (Total of ${this.handValue}).`);
+  }
 
   getCashOnHand() {
     return this.wallet;
@@ -212,16 +226,28 @@ class Player extends Participant {
 class Dealer extends Participant {
   constructor() {
     super();
+    // this.holeShowing = null;
   }
 
   static HIT_THRESHOLD = 17;
 
   hideHoleCard() {
     this.hand[1].hideCard();
+    // this.holeShowing = false;
   }
 
   showHoleCard() {
     this.hand[1].unhideCard();
+    // this.holeShowing = true;
+  }
+
+  isHoleHidden() {
+    return this.hand[1].isHidden();
+  }
+
+  showHand() {
+    let scorePrefix = (this.isHoleHidden()) ? 'Showing' : 'Total of';
+    console.log(`${this.getHandDescription()} (${scorePrefix} ${this.handValue}).`);
   }
 }
 
@@ -254,50 +280,68 @@ class TwentyOneGame {
   }
 
   playSingleHand() {
-    while (true) {
-      this.dealCards();
-      this.showCards();
-      this.playerTurn();
-      // this.dealerTurn();
-      let pause = readline.question();
-      if (pause) break;
+    this.openingDeal();
+    this.showHands();
+
+    this.playerTurn();
+
+    if (!this.isBusted(this.player)) {
+      this.dealerTurn();
     }
+
+    console.clear();
+    this.showHands();
+    //COMPLETE UPTO
+
   }
 
-  dealCards() {
+  openingDeal() { //DONE
     for (let idx = 0; idx < 2; idx++) {
       this.player.takeCard(this.deck.dealCard());
       this.dealer.takeCard(this.deck.dealCard());
     }
 
     this.dealer.hideHoleCard();
-  }
 
-  showCards() {
-    //STUB
-    this.dealer.showHand();
-    this.player.showHand();
-    // this.deck.cardsInDeck.forEach(card => {
-    //   console.log(card.getCardName());
+    // [this.player, this.dealer].forEach(person => {
+    //   person.updateHandValue(TwentyOneGame.BUST_THRESHOLD);
     // });
   }
 
+  updateHands(arrayOfPlayers) {
+    arrayOfPlayers.forEach(person => {
+      person.updateHandValue(TwentyOneGame.BUST_THRESHOLD);
+    });
+  }
+
+  showHands() { //DONE
+    this.updateHands([this.player, this.dealer]);
+    this.dealer.showHand();
+    this.player.showHand();
+  }
+
   playerTurn() {
-    // console.log(this.hitOrStay()); ///
     while (this.hitOrStay() === TwentyOneGame.HIT) {
       this.hit(this.player);
       if (this.isBusted(this.player)) break;
+      // this.showGameboard();
     }
   }
 
-  isBusted(player) {
-    let handValue = player.getHandValue(TwentyOneGame.BUST_THRESHOLD);
-    return handValue > TwentyOneGame.BUST_THRESHOLD;
+  dealerTurn() {
+    this.dealer.showHoleCard();
+    console.clear();
+    this.showHands();
+
+    while (this.dealer.getHandValue() < Dealer.HIT_THRESHOLD) {
+      this.dealerMovePrompt();
+      this.hit(this.dealer);
+    }
   }
 
-  // calculateHandScore(player) {
-  //   player.
-  // }
+  isBusted(player) { //DONE
+    return player.getHandValue() > TwentyOneGame.BUST_THRESHOLD;
+  }
 
   hitOrStay() { //DONE
     let answer;
@@ -314,16 +358,16 @@ class TwentyOneGame {
   }
 
   hit(player) {
-    player.hit(this.deck.dealCard());
     console.log(`${player.constructor.name} hits!`);
-    //check if busted
+    player.hit(this.deck.dealCard());
+    player.updateHandValue(TwentyOneGame.BUST_THRESHOLD);
 
-    console.log('hit!');
-    this.showCards();
+    console.clear();
+    this.showGameboard();
   }
 
-  dealerTurn() {
-    //STUB
+  dealerMovePrompt() {
+    readline.question(`Press <enter> for Dealer's move...`);
   }
 
   displayWelcomeMessage() { //DONE
