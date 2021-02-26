@@ -335,7 +335,7 @@ class TTTGame {
     if (this.human.getScore() === TTTGame.WINS_THRESHOLD) {
       console.log(`Congratulations!  You won this match`
       + ` ${this.human.getScore()} games to ${this.computer.getScore()}.`);
-    } else {
+    } else if (this.computer.getScore() === TTTGame.WINS_THRESHOLD) {
       console.log(`Oh dear.  The computer won this match`
       + ` ${this.computer.getScore()} games to ${this.human.getScore()}.`);
     }
