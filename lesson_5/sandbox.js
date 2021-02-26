@@ -180,7 +180,7 @@ class TwentyOneGame {
 
     if (this.player.isBroke()) {
       console.log("You're broke!");
-    } else if (this.player.isRich()){
+    } else if (this.player.isRich()) {
       console.log("You're rich!");
     }
 

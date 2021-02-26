@@ -2,24 +2,6 @@
 // OO Twenty-One //
 ///////////////////
 
-// Game (n)
-//      start (v)
-// Deck (n)
-//      deal (v) (should this be here, or in Dealer?)
-// Card (n)
-// Participant (n)
-// Player (n)
-//      hit (v)
-//      stay (v)
-//      bust (state)
-//      Score (n, state)
-// Dealer (n)
-//      hit (v)
-//      stay (v)
-//      deal (v) (should this be here, or in Deck?)
-//      bust (state)
-//      Score (n, state)
-
 const readline = require('readline-sync');
 
 class Card {
@@ -32,15 +14,15 @@ class Card {
   static SUITS = ['Spades', 'Clubs', 'Diamonds', 'Hearts'];
 
   static RANKS = {
-    // 2: 2,
-    // 3: 3,
-    // 4: 4,
-    // 5: 5,
-    // 6: 6,
-    // 7: 7,
+    2: 2,
+    3: 3,
+    4: 4,
+    5: 5,
+    6: 6,
+    7: 7,
     8: 8,
     9: 9,
-    // 10: 10,
+    10: 10,
     Jack: 10,
     Queen: 10,
     King: 10,
@@ -104,15 +86,17 @@ class Deck {
   }
 }
 
-class Participant {
-  constructor() {
+class Hand {
+  constructor(owner) {
     this.hand = [];
     this.handValue = null;
+    this.owner = owner;
   }
 
-  // dealHand() {
-  //   this.hand
-  // }
+  clearHand() {
+    this.hand = [];
+  }
+
   takeCard(card) {
     this.hand.push(card);
   }
@@ -124,19 +108,8 @@ class Participant {
 
   getHandDescription() {
     let cardNames = this.hand.map(card => card.getCardName());
-    // let scorePrefix = (this.isHoleHidden()) ? 'Showing' : 'Total of';
-    // let displayValue = (this.isHoleHidden()) ? 'Showing' : this.handValue;
-
-    return `${this.constructor.name} has: ${this.joinOr(cardNames)}`;
+    return `${this.getName()} has: ${this.joinOr(cardNames)}`;
   }
-
-  // isHoleHidden() {
-  //   return (this.hand.some(card => card.isHidden()));
-  // }
-
-  // getExposedHandValue() {
-  //   return (this.isHoleHidden()) ?  : this.handValue;
-  // }
 
   sumRawHandValue() {
     return this.hand.map(card => {
@@ -160,14 +133,6 @@ class Participant {
     this.takeCard(card);
   }
 
-  stay() {
-    //STUB
-  }
-
-  bust() {
-    //STUB
-  }
-
   getHandValue() {
     return this.handValue;
   }
@@ -179,19 +144,19 @@ class Participant {
     }
   }
 
-  score() {
-    //STUB
+  getName() {
+    return this.owner;
   }
 }
 
-class Player extends Participant {
+class PlayerHand extends Hand {
   constructor() {
-    super();
-    this.wallet = Player.STARTING_CASH;
+    super('Player');
+    this.wallet = PlayerHand.STARTING_CASH;
   }
 
   static STARTING_CASH = 5;
-  static WINNING_THRESHOLD = 2 * Player.STARTING_CASH;
+  static WINNING_THRESHOLD = 2 * PlayerHand.STARTING_CASH;
   static BET_AMOUNT = 1;
 
   showHand() {
@@ -203,15 +168,15 @@ class Player extends Participant {
   }
 
   showCashOnHand() {
-    console.log(`$${this.getCashOnHand}`);
-  }
-
-  placeBet() {
-    this.wallet -= Player.BET_AMOUNT;
+    console.log(`$${this.getCashOnHand()}`);
   }
 
   addWinnings() {
-    this.wallet += Player.BET_AMOUNT * 2;
+    this.wallet += PlayerHand.BET_AMOUNT;
+  }
+
+  subtractBet() {
+    this.wallet -= PlayerHand.BET_AMOUNT;
   }
 
   isBroke() {
@@ -219,26 +184,23 @@ class Player extends Participant {
   }
 
   isRich() {
-    return this.wallet >= Player.WINNING_THRESHOLD;
+    return this.wallet >= PlayerHand.WINNING_THRESHOLD;
   }
 }
 
-class Dealer extends Participant {
+class DealerHand extends Hand {
   constructor() {
-    super();
-    // this.holeShowing = null;
+    super('Dealer');
   }
 
   static HIT_THRESHOLD = 17;
 
   hideHoleCard() {
     this.hand[1].hideCard();
-    // this.holeShowing = false;
   }
 
   showHoleCard() {
     this.hand[1].unhideCard();
-    // this.holeShowing = true;
   }
 
   isHoleHidden() {
@@ -253,10 +215,9 @@ class Dealer extends Participant {
 
 class TwentyOneGame {
   constructor() {
-    //STUB
     this.deck = new Deck();
-    this.player = new Player();
-    this.dealer = new Dealer();
+    this.player = new PlayerHand();
+    this.dealer = new DealerHand();
   }
 
   static HIT = 'h';
@@ -264,18 +225,17 @@ class TwentyOneGame {
   static BUST_THRESHOLD = 21;
 
   start() {
-    //SPIKE
     this.displayWelcomeMessage();
 
-    //playSingleHand
     while (true) {
       this.playSingleHand();
-      // if (this.player.isBroke() || this.player.isRich()) break;
+      if (this.financialExit()) {
+        this.displayFinancialGoodbyeMessage();
+        break;
+      }
       if (!this.playAgain()) break;
     }
 
-
-    this.displayResult();
     this.displayGoodbyeMessage();
   }
 
@@ -289,23 +249,58 @@ class TwentyOneGame {
       this.dealerTurn();
     }
 
-    console.clear();
+    this.updateCashOnHand();
     this.showHands();
-    //COMPLETE UPTO
-
+    this.displayResult();
   }
 
-  openingDeal() { //DONE
+  financialExit() {
+    return (this.player.isBroke() || this.player.isRich());
+  }
+
+  getWinner() {
+    if (this.isBusted(this.player)) return this.dealer;
+    if (this.isBusted(this.dealer)) return this.player;
+
+    let playerScore = this.player.getHandValue();
+    let dealerScore = this.dealer.getHandValue();
+
+    if (playerScore > dealerScore) return this.player;
+    if (playerScore < dealerScore) return this.dealer;
+    return null;
+  }
+
+  updateCashOnHand() {
+    let winner = this.getWinner();
+
+    if (winner === this.player) {
+      this.player.addWinnings();
+    } else if (winner === this.dealer) {
+      this.player.subtractBet();
+    }
+  }
+
+  openingDeal() {
+    this.resetGame();
+    this.dealCards();
+    this.dealer.hideHoleCard();
+  }
+
+  resetGame() {
+    this.deck = new Deck();
+    this.resetHands();
+  }
+
+  resetHands() {
+    this.player.clearHand();
+    this.dealer.clearHand();
+  }
+
+  dealCards() {
     for (let idx = 0; idx < 2; idx++) {
       this.player.takeCard(this.deck.dealCard());
       this.dealer.takeCard(this.deck.dealCard());
     }
-
-    this.dealer.hideHoleCard();
-
-    // [this.player, this.dealer].forEach(person => {
-    //   person.updateHandValue(TwentyOneGame.BUST_THRESHOLD);
-    // });
   }
 
   updateHands(arrayOfPlayers) {
@@ -314,8 +309,9 @@ class TwentyOneGame {
     });
   }
 
-  showHands() { //DONE
+  showHands() {
     this.updateHands([this.player, this.dealer]);
+    this.printCashInfo();
     this.dealer.showHand();
     this.player.showHand();
   }
@@ -324,7 +320,6 @@ class TwentyOneGame {
     while (this.hitOrStay() === TwentyOneGame.HIT) {
       this.hit(this.player);
       if (this.isBusted(this.player)) break;
-      // this.showGameboard();
     }
   }
 
@@ -333,17 +328,17 @@ class TwentyOneGame {
     console.clear();
     this.showHands();
 
-    while (this.dealer.getHandValue() < Dealer.HIT_THRESHOLD) {
-      this.dealerMovePrompt();
+    while (this.dealer.getHandValue() < DealerHand.HIT_THRESHOLD) {
+      this.continuationPrompt(`Press <enter> for Dealer's move...`);
       this.hit(this.dealer);
     }
   }
 
-  isBusted(player) { //DONE
+  isBusted(player) {
     return player.getHandValue() > TwentyOneGame.BUST_THRESHOLD;
   }
 
-  hitOrStay() { //DONE
+  hitOrStay() {
     let answer;
 
     while (true) {
@@ -357,43 +352,26 @@ class TwentyOneGame {
     return answer;
   }
 
+  printCashInfo() {
+    console.clear();
+    console.log(`The buy-in is $${PlayerHand.BET_AMOUNT} `
+      + `| You have $${this.player.getCashOnHand()} remaining.\n`);
+  }
+
   hit(player) {
-    console.log(`${player.constructor.name} hits!`);
+    console.log(`${player.getName()} hits!`);
     player.hit(this.deck.dealCard());
     player.updateHandValue(TwentyOneGame.BUST_THRESHOLD);
 
     console.clear();
-    this.showGameboard();
+    this.showHands();
   }
 
-  dealerMovePrompt() {
-    readline.question(`Press <enter> for Dealer's move...`);
-  }
-
-  displayWelcomeMessage() { //DONE
-    console.clear();
-    let title = "Welcome to Twenty-One!";
-    let horizontalBorder = `+${'-'.repeat(title.length + 2)}+`;
-
-    console.log(horizontalBorder);
-    console.log(`| ${title.toUpperCase()} |`);
-    console.log(horizontalBorder);
-    console.log("");
-  }
-
-  displayGoodbyeMessage() { //DONE
-    console.log("\nThanks for playing Tic Tac Toe!  Goodbye!");
-  }
-
-  displayResult() {
-    //STUB
-  }
-
-  playAgain() { //DONE
+  playAgain() {
     let answer;
 
     while (true) {
-      console.log("Would you like to play again? ('y' or 'n')");
+      console.log("\nWould you like to play again? ('y' or 'n')");
       answer = readline.question("=> ").toLowerCase();
 
       if (['y', 'n'].includes(answer)) break;
@@ -402,6 +380,61 @@ class TwentyOneGame {
     }
 
     return answer === 'y';
+  }
+
+  continuationPrompt(text) {
+    readline.question(`\n${text}`);
+  }
+
+  displayWelcomeMessage() {
+    console.clear();
+    let title = "Welcome to Twenty-One!";
+    let horizontalBorder = `+${'-'.repeat(title.length + 2)}+`;
+
+    console.log(horizontalBorder);
+    console.log(`| ${title.toUpperCase()} |`);
+    console.log(horizontalBorder);
+
+    console.log(`\nClosest to ${TwentyOneGame.BUST_THRESHOLD} without `
+      + `going over wins the hand. Good luck!`);
+
+    this.continuationPrompt(`Press <enter> to continue...`);
+  }
+
+  displayFinancialGoodbyeMessage() {
+    if (this.player.isBroke()) {
+      console.log(`\nYou're broke. Game Over. Now get out!`);
+    } else if (this.player.isRich()) {
+      console.log(`\nYou're now rich. Your success has bankrupted our casino.  Now get out!`);
+    }
+  }
+
+  displayResult() {
+    let playerScore = this.player.getHandValue();
+    let dealerScore = this.dealer.getHandValue();
+
+    console.log(``);
+
+    if (this.isBusted(this.player)) {
+      printWithBorders(`YOU LOSE! You BUST (${playerScore} > ${TwentyOneGame.BUST_THRESHOLD}).`);
+    } else if (this.isBusted(this.dealer)) {
+      printWithBorders(`YOU WIN! Dealer BUSTS (${dealerScore} > ${TwentyOneGame.BUST_THRESHOLD}).`);
+    } else if (playerScore > dealerScore) {
+      printWithBorders(`YOU WIN! Your score of ${playerScore} beats the Dealer's ${dealerScore}.`);
+    } else if (playerScore < dealerScore) {
+      printWithBorders(`YOU LOSE! Dealer's score of ${dealerScore} beats the your measly ${playerScore}.`);
+    } else {
+      printWithBorders(`Push! Game ends in a draw (Total of ${playerScore} a piece).`);
+    }
+
+    function printWithBorders(text) {
+      let border = '='.repeat(text.length);
+      console.log(`${border}\n${text}\n${border}`);
+    }
+  }
+
+  displayGoodbyeMessage() {
+    console.log("\nThanks for playing Tic Tac Toe!  Goodbye!");
   }
 }
 
